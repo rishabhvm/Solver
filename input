@@ -1,0 +1,23 @@
+! file containing input parameter values
+
+&parameters
+
+! Grid size
+Nx = 10
+Ny = 10
+Nz = 10
+
+! domain size
+Lx = 1d0
+Ly = 1d0
+Lz = 1d0
+
+! output path
+out_path = 'out'
+
+
+
+
+
+/
+! end of namelist

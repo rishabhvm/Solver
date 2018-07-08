@@ -2,14 +2,14 @@ program main
 use grid
 use flow
 use BC
-        
+use input
+use output
+
 implicit none
 
 
+call read_input
 
-i = 1
-print *, i
-
-
+print *, Nx,Ny,Nz
 
 end program main
