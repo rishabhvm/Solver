@@ -16,6 +16,9 @@ integer :: i,j,k
 ! # grid points
 integer :: Nx, Ny, Nz
 
+! # ghost points
+integer :: Ng
+
 ! Domain size
 real(8) :: Lx, Ly, Lz
 
@@ -89,6 +92,10 @@ implicit none
 ! initialize time variables
 t_step = 0
 
+dx = Lx/Nx; dy = Ly/Ny; dz = Lz/Nz
+
+!allocate(u(),v(),w(),&
+!         p(), rho())
 
 end subroutine initialize
 
@@ -103,8 +110,9 @@ implicit none
 ! namelist containing a list of input variables to be
 ! read from the input file
 ! 
-NAMELIST /parameters/ Nx, Ny, Nz, Lx, Ly, Lz, &
-                      out_path, t_final, dt
+NAMELIST /parameters/ Nx, Ny, Nz, Ng, Lx, Ly, Lz, &
+                      out_path, t_final, dt, &
+                      bdry_cond, mu
 
 open(9, FILE='input',STATUS='unknown')
 read(9, NML=parameters)

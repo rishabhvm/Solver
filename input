@@ -7,6 +7,10 @@ Nx = 10
 Ny = 10
 Nz = 10
 
+! ghost points
+Ng = 2
+
+
 ! domain size
 Lx = 1d0
 Ly = 1d0
@@ -19,8 +23,12 @@ out_path = 'out'
 t_final = 1d0  ! simulation run time (in sec)
 dt = 0.01d0    ! time step size
 
+! boundary condition
 
+bdry_cond = wall wall wall
 
+! flow related
+mu = 0.1d0
 
 
 
