@@ -3,9 +3,9 @@
 &parameters
 
 ! Grid size
-Nx = 10
-Ny = 10
-Nz = 10
+Nx = 11
+Ny = 11
+!Nz = 10
 
 ! ghost points
 Ng = 2
@@ -14,7 +14,7 @@ Ng = 2
 ! domain size
 Lx = 1d0
 Ly = 1d0
-Lz = 1d0
+!Lz = 1d0
 
 ! output path
 out_path = 'out'
@@ -25,12 +25,16 @@ dt = 0.01d0    ! time step size
 
 ! boundary condition
 
-bdry_cond = wall wall wall
+bdry_cond = 'wall' 'wall' !wall
 
 ! flow related
 mu = 0.1d0
+rhof = 1d0
 
-
+! accelaeration due to gravity
+gx = 0d0
+gy = 0d0
+gz = 0d0
 
 /
 ! end of namelist

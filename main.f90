@@ -9,6 +9,6 @@ implicit none
 
 call read_input
 
-print *, Nx,Ny,Nz
+print *, Nx,Ny
 
 end program main

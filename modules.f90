@@ -5,22 +5,22 @@ module grid
 implicit none
 
 ! Node coordinates x,y,z
-real(8), allocatable :: x(:),y(:),z(:)
+real(8), allocatable :: x(:),y(:)!,z(:)
 
 ! grid size
-real(8) :: dx, dy ,dz
+real(8) :: dx, dy !,dz
 
 ! Node indices
-integer :: i,j,k
+integer :: i,j!,k
 
 ! # grid points
-integer :: Nx, Ny, Nz
+integer :: Nx, Ny!, Nz
 
 ! # ghost points
 integer :: Ng
 
 ! Domain size
-real(8) :: Lx, Ly, Lz
+real(8) :: Lx, Ly!, Lz
 
 end module grid
 
@@ -33,16 +33,17 @@ module flow
 implicit none
 
 ! x,y,z velocities
-real(8), allocatable :: u(:), v(:), w(:) 
+real(8), allocatable :: u(:,:), v(:,:)!, w(:,:,:) 
 
 ! pressure
-real(8), allocatable :: p(:,:,:)
+real(8), allocatable :: p(:,:)
 
 ! density
-real(8), allocatable :: rho(:,:,:)
+real(8), allocatable :: rho(:,:)
 
-! dynamic viscosity
-real(8) :: mu
+! dynamic viscosity, density, 
+! acceleration due to gravity g = (gx,gy,gz)
+real(8) :: mu,rhof,gx, gy, gz
 
 ! time related
 real(8) :: dt     ! time step
@@ -62,7 +63,7 @@ implicit none
 
 ! character array containing BC in x,y,z directions respectively
 ! wall
-character(len = 20), dimension(3) :: bdry_cond 
+character(len = 20) :: bdry_cond(2) 
 
 end module BC
 
@@ -92,10 +93,14 @@ implicit none
 ! initialize time variables
 t_step = 0
 
-dx = Lx/Nx; dy = Ly/Ny; dz = Lz/Nz
+dx = Lx/(Nx-1); dy = Ly/(Ny-1) !; dz = Lz/(Nz-1)
 
-!allocate(u(),v(),w(),&
-!         p(), rho())
+! allocate unallocated variables
+allocate(u(Nx,Ny+1),v(Nx+1,Ny), &  !w(),&
+         p(Nx+1,Ny+1), rho(Nx+1,Ny+1))
+
+u = 0d0; v = 0d0; p = 0d0; rho = rhof
+
 
 end subroutine initialize
 
@@ -110,9 +115,9 @@ implicit none
 ! namelist containing a list of input variables to be
 ! read from the input file
 ! 
-NAMELIST /parameters/ Nx, Ny, Nz, Ng, Lx, Ly, Lz, &
+NAMELIST /parameters/ Nx, Ny, Ng, Lx, Ly, &
                       out_path, t_final, dt, &
-                      bdry_cond, mu
+                      bdry_cond, mu, rhof, gx, gy, gz 
 
 open(9, FILE='input',STATUS='unknown')
 read(9, NML=parameters)
