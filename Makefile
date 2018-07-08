@@ -16,7 +16,7 @@ main.o: modules.mod main.f90
 
 
 clean: 
-	rm *m.mod *.o run.exe
+	rm *.mod *.o run.exe
 
 
 #end makefile
