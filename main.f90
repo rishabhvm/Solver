@@ -2,8 +2,7 @@ program main
 use grid
 use flow
 use BC
-use input
-use output
+use io
 
 implicit none
 

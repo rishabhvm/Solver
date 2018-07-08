@@ -15,6 +15,11 @@ Lz = 1d0
 ! output path
 out_path = 'out'
 
+! time stepping
+t_final = 1d0  ! simulation run time (in sec)
+dt = 0.01d0    ! time step size
+
+
 
 
 
