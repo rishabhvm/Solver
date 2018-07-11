@@ -29,7 +29,8 @@ subroutine grid(xu,yv,xc,yc,nx,ny)
     
     integer :: i, j, ix1, ix2
     integer :: nx, ny
-    real (kind=8) :: xu, yv, xc, yc
+    real (kind=8) :: xu(nx), yv(ny), xc(nx), yc(ny)
+    real (kind=8) :: dxu(nx-1), dxc(nx-1), dyc(ny-1), dyv(ny-1)
     real (kind=8) :: xlen, ylen
     character (len=160) :: str1, str2
 
@@ -52,6 +53,13 @@ subroutine grid(xu,yv,xc,yc,nx,ny)
     end do
  
     xc(1) = xu(1) - 0.5*(xu(2) - xu(1))
+
+!!! Finding the distances between cell faces - x direction
+    do i = 1, nx-1
+        dxu(i) = xu(i+1) - xu(i)
+        dxc(i) = xc(i+1) - xc(i)    
+    end do
+!!! 
 
 
 !!!!!!!!!!!!!!
@@ -83,7 +91,14 @@ subroutine grid(xu,yv,xc,yc,nx,ny)
  
     yv(1) = yv(1) - 0.5*(yv(2) - yv(1))
 
-    
+!!! Finding the distances between cell faces - y direction
+    do i = 1, ny-1
+        dyv(i) = yv(i+1) - yv(i)
+        dyc(i) = yc(i+1) - yc(i)    
+    end do
+!!! 
+
+   
 !!!!!!!!!!!!!!
 !
 !
