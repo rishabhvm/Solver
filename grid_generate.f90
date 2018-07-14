@@ -17,24 +17,24 @@
 !@h
 !   Comments:
 !     Grid settings are read from input file. This is a serial program. 
-!     Support is provided for uniform grids, hyperbolic sine stretching and
-!     percent stretching at this time. The edge grid is defined first and 
-!     all other values are derived from it. 
 !@q
 
-subroutine grid(xu,yv,xc,yc,nx,ny)
+subroutine grid_generate()
 
+    use grid
     implicit none
     include 'common.h'
     
-    integer :: i, j, ix1, ix2
-    integer :: nx, ny
-    real (kind=8) :: xu(nx), yv(ny), xc(nx), yc(ny)
-    real (kind=8) :: dxu(nx-1), dxc(nx-1), dyc(ny-1), dyv(ny-1)
-    real (kind=8) :: xlen, ylen
+    integer :: i, j, ix1, ix2, iy1, iy2
     character (len=160) :: str1, str2
 
+!!! nxt = nx + 2
+!!! nyt = ny + 2
+!!! nx and ny are total number of phyiscal cell centers
         
+!!! Grid files contain nxt-1 and nyt-1 points
+!!! Cell faces are read and cell centers are derived from cell faces
+
     ix1 = 2
 
     open(unit=1,file=str1,status='old',form='formatted')
@@ -42,20 +42,20 @@ subroutine grid(xu,yv,xc,yc,nx,ny)
     read(1,*) (j,xu(i),i=1,ix2)
     close(1)
     
-    xlen = xu(ix2) - xu(1)
+    Lx  = xu(ix2) - xu(1)
 
-    xu(nx) = 2*xu(ix2) - xu(ix2-1)
+    xu(nxt) = 2*xu(ix2) - xu(ix2-1)
 
- !!! Finding the cell centers for x grid
+!!! Finding the cell centers for x grid
 
-    do i = 2, nx
+    do i = 2, nxt
         xc(i) = xu(i-1) + 0.5*(xu(i) - xu(i-1))
     end do
  
     xc(1) = xu(1) - 0.5*(xu(2) - xu(1))
 
 !!! Finding the distances between cell faces - x direction
-    do i = 1, nx-1
+    do i = 1, nxt-1
         dxu(i) = xu(i+1) - xu(i)
         dxc(i) = xc(i+1) - xc(i)    
     end do
@@ -79,20 +79,20 @@ subroutine grid(xu,yv,xc,yc,nx,ny)
     read(1,*) (j,yv(i),i=1,iy2)
     close(1)
     
-    ylen = yv(ix2) - xu(1)
+    Ly = yv(ix2) - xu(1)
 
     yv(ny) = 2*yv(iy2) - yv(iy2-1)
 
- !!! Finding the cell centers for x grid
+!!! Finding the cell centers for x grid
 
-    do i = 2, ny
+    do i = 2, nyt
         yc(i) = yv(i-1) + 0.5*(yv(i) - yv(i-1))
     end do
  
     yv(1) = yv(1) - 0.5*(yv(2) - yv(1))
 
 !!! Finding the distances between cell faces - y direction
-    do i = 1, ny-1
+    do i = 1, nyt-1
         dyv(i) = yv(i+1) - yv(i)
         dyc(i) = yc(i+1) - yc(i)    
     end do

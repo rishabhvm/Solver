@@ -1,28 +1,30 @@
 
 
 !---------------------------------------------------------------------------
-! module for grid variables 
+! Module for grid variables 
 ! Author: Rishabh More
 ! Date: 07-08-2018
 !---------------------------------------------------------------------------
 
 module grid
+
 implicit none
 
-! Node coordinates x,y,z
-real(8), allocatable :: x(:),y(:)!,z(:)
+! Cell faces
+real(8), allocatable :: xu(:), yv(:) !,zw(:)
 
-! grid size
-real(8) :: dx, dy !,dz
+! Cell centers
 
-! Node indices
-integer :: i,j!,k
+real(8), allocatable :: xc(:), yc(:) !,zc(:)
 
-! # grid points
-integer :: Nx, Ny!, Nz
+! Grid sizes
+real(8) :: dxu, dxc, dyv, dyc !dzw, dz
+
+! Grid points
+integer :: nx, ny, nxt, nyt!, nz, nzt
 
 ! # ghost points
-integer :: Ng
+integer :: ng
 
 ! Domain size
 real(8) :: Lx, Ly!, Lz
@@ -30,7 +32,7 @@ real(8) :: Lx, Ly!, Lz
 end module grid
 
 !---------------------------------------------------------------------------
-! module for fluid flow variables 
+! Module for fluid flow variables 
 ! Author: Rishabh More
 ! Date: 07-08-2018
 !---------------------------------------------------------------------------
@@ -40,19 +42,19 @@ module flow
 implicit none
 
 ! x,y,z velocities
-real(8), allocatable :: u(:,:), v(:,:)!, w(:,:,:) 
+real(8), allocatable :: u(:,:), v(:,:)      !, w(:,:,:) 
 
 ! x,y,z velocities: after adding advection
-real(8), allocatable :: u_s(:,:), v_s(:,:)!, w_s(:,:,:)
+real(8), allocatable :: u_s(:,:), v_s(:,:)  !, w_s(:,:,:)
 
 ! x,y,z velocities: prev time step
 
 
 ! pressure
-real(8), allocatable :: p(:,:)
+real(8), allocatable :: pc(:,:)
 
 ! density
-real(8), allocatable :: rho(:,:)
+real(8), allocatable :: rhoc(:,:)
 
 ! dynamic viscosity, density, 
 ! acceleration due to gravity g = (gx,gy,gz)
@@ -65,6 +67,7 @@ integer :: t_step ! time step counter
 
 ! other constants
 real(8),allocatable :: c(:,:)
+
 end module flow
 
 !---------------------------------------------------------------------------
