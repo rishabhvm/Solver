@@ -28,6 +28,8 @@ subroutine grid_generate()
     integer :: i, j, ix1, ix2, iy1, iy2
     character (len=160) :: str1, str2
 
+
+!!! Currently only utilizing 1 ghost cell => 2 extra nodes 
 !!! nxt = nx + 2
 !!! nyt = ny + 2
 !!! nx and ny are total number of phyiscal cell centers
@@ -41,7 +43,7 @@ subroutine grid_generate()
     read(1,*) ix2
     read(1,*) (j,xu(i),i=1,ix2)
     close(1)
-    
+
     Lx  = xu(ix2) - xu(1)
 
     xu(nxt) = 2*xu(ix2) - xu(ix2-1)
@@ -54,11 +56,15 @@ subroutine grid_generate()
  
     xc(1) = xu(1) - 0.5*(xu(2) - xu(1))
 
+    xv = xc
+  
 !!! Finding the distances between cell faces - x direction
     do i = 1, nxt-1
         dxu(i) = xu(i+1) - xu(i)
         dxc(i) = xc(i+1) - xc(i)    
     end do
+
+    dxv = dxc    
 !!! 
 
 
@@ -89,13 +95,18 @@ subroutine grid_generate()
         yc(i) = yv(i-1) + 0.5*(yv(i) - yv(i-1))
     end do
  
-    yv(1) = yv(1) - 0.5*(yv(2) - yv(1))
+    yc(1) = yv(1) - 0.5*(yv(2) - yv(1))
+
+    yu = yc 
 
 !!! Finding the distances between cell faces - y direction
     do i = 1, nyt-1
         dyv(i) = yv(i+1) - yv(i)
         dyc(i) = yc(i+1) - yc(i)    
     end do
+
+    dyu = dyc
+
 !!! 
 
    

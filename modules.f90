@@ -1,5 +1,3 @@
-
-
 !---------------------------------------------------------------------------
 ! Module for grid variables 
 ! Author: Rishabh More
@@ -9,16 +7,67 @@
 module grid
 
 implicit none
+!
+!   pressure cell
+!   
+!           !-------------------dxc(i)--------------------!
+!
+!                              v(i,j)
+!   [xu(i-1),yv(j)]---------[xv(i),yv(j)]---------[xu(i-1),yv(j)]      ---
+!           |                                             |             |
+!           |                                             |             |
+!      u(i-1,j)                p(i,j)                  u(i,j)           |
+!   [xu(i-1),yu(j)]        [xc(i),yc(j)]            [xu(i),yv(j)]     dyc(j)  
+!           |                                             |             |
+!           |                                             |             |
+!   [xu(i-1),yv(j-1)]------[xv(i),yv(j-1)]--------[xu(i),yv(j-1)]      ---
+!                             v(i,j-1)
+!
+!
+!   u-velo cell 
+!   
+!           !-------------------dxu(i)--------------------!
+!
+!        v(i,j)                                      v(i+1,j)
+!     [xv(i),yv(j)]---------[xu(i),yv(j)]---------[xv(i+1),yv(j)]      ---
+!           |                                             |             |
+!           |                                             |             |
+!        p(i,j)                u(i,j)                 p(i+1,j)          |
+!     [xc(i),yc(j)]         [xu(i),yu(j)]         [xc(i+1),yc(j)]     dyu(j)  
+!           |                                             |             |
+!           |                                             |             |
+!   [xu(i-1),yv(j-1)]------[xu(i),yv(j-1)]--------[xv(i+1),yv(j-1)]    ---
+!       v(i,j-1)                                     v(i+1,j-1)
+!
+!
+!   v-velo cell 
+!   
+!           !-------------------dxv(i)--------------------!
+!
+!      u(i-1,j+1)              p(i,j+1)                u(i,j+1)
+!   [xu(i-1),yu(j+1)]-------[xc(i),yc(j+1)]---------[xu(i),yu(j+1)]    ---
+!           |                                             |             |
+!           |                                             |             |
+!           |                  v(i,j)                     |             |
+!   [xu(i-1),yv(j)]         [xv(i),yv(j)]           [xu(i),yv(j)]     dyv(j)  
+!           |                                             |             |
+!           |                                             |             |
+!   [xu(i-1),yu(j)]---------[xc(i),yc(j)]-----------[xu(i),yu(j)]      ---
+!       u(i-1,j)               p(i,j)                  u(i,j)
+!
+!
+!
+
+
 
 ! Cell faces
-real(8), allocatable :: xu(:), yv(:) !,zw(:)
+real(8), allocatable :: xu(:), yu(:), xv(:), yv(:) !,zw(:)
 
 ! Cell centers
-
 real(8), allocatable :: xc(:), yc(:) !,zc(:)
 
 ! Grid sizes
-real(8) :: dxu, dxc, dyv, dyc !dzw, dz
+real(8),allocatable :: dxu(:), dyu(:), dxc(:), dyc(:), dxv(:), dyv(:) !dzw, dz
 
 ! Grid points
 integer :: nx, ny, nxt, nyt!, nz, nzt
@@ -28,6 +77,11 @@ integer :: ng
 
 ! Domain size
 real(8) :: Lx, Ly!, Lz
+
+! start-end indices excluding ghost nodes
+integer :: ics, jcs, ice, jce, &
+           ius, iue, jus, jue, &
+           ivs, ive, jvs, jve ! i-start, i-end, etc
 
 end module grid
 
@@ -46,6 +100,9 @@ real(8), allocatable :: u(:,:), v(:,:)      !, w(:,:,:)
 
 ! x,y,z velocities: after adding advection
 real(8), allocatable :: u_s(:,:), v_s(:,:)  !, w_s(:,:,:)
+
+! x,y,z velocity increments after advection 
+real(8), allocatable :: du(:,:), dv(:,:)
 
 ! x,y,z velocities: prev time step
 
@@ -67,6 +124,174 @@ integer :: t_step ! time step counter
 
 ! other constants
 real(8),allocatable :: c(:,:)
+
+! advection scheme identifier
+character(len = 6) :: adv_sch
+
+contains
+
+!-------------------------------------------------------------------------------
+! subroutine to calculate advection terms
+! Author: Rishabh More
+! Date: 07-14-2018
+!-------------------------------------------------------------------------------
+
+subroutine calc_adv
+use grid
+implicit none
+
+!real(8),intent(in) :: u(Nxt,Nyt),v(Nxt,Nyt)
+!real(8),intent(out):: du(Nxt,Nyt),dv(Nxt,Nyt)
+!character(len=6), intent(in) :: adv_sch
+integer :: i, j
+real(8) :: temp(Nxt,Nyt,2) ! temporary array containing interpolated velocities
+                           ! temp(i,j,1) = interpolated u velo
+                           ! temp(i,j,2) = interpolated v velo
+
+! x-momentum
+
+call interpolate('x',adv_sch,temp)
+
+do i = ius, iue
+    do j = jus, jue
+        
+        du(i,j) = du(i,j) + &
+                  (temp(i+1,j,1)**2d0 - temp(i,j,1)**2d0)*dyv(j) + &
+                  (temp(i,j+1,2)*((v(i+1,j) + v(i,j))/2d0)  - &
+                   temp(i,j,2)*((v(i,j-1) + v(i+1,j-1))/2d0))*dxu(i) 
+    enddo
+enddo
+
+! y-momentum
+
+call interpolate('y',adv_sch,temp)
+
+do i = ivs, ive
+    do j = jvs, jve
+
+        dv(i,j) = dv(i,j) + & 
+                  ( temp(i+1,j,1)**2d0 - temp(i,j,1)**2d0 ) * dyv(j) + &
+                  ( temp(i,j+1,2) * ( ( v(i+1,j) + v(i,j) ) / 2d0 )  - &
+                    temp(i,j,2) * ( ( v(i,j-1) + v(i+1,j-1) ) / 2d0 ) ) * dxu(i)
+    enddo
+enddo
+
+end subroutine calc_adv
+
+!-------------------------------------------------------------------------------
+
+subroutine interpolate(dir,sch1,temp1)
+use grid
+
+implicit none
+
+character, intent(in) :: dir
+character(len=6), intent(in) :: sch1
+real(8), intent(out) :: temp1(Nxt,Nyt,2)
+integer :: i,j
+character(len=6) :: sch
+sch = sch1
+! Interpolation at the cell face (x)
+!     |       |   u>  |
+!     x2      x0  x   x1
+
+if(dir == 'x') then
+
+    do i = ius,iue
+        do j = jus,jue
+
+            ! west face
+            if(u(i,j)+u(i-1,j) .gt. 0d0) then
+                temp1(i,j,1) = inter(xu(i-1),xu(i),xu(i-2),xc(i),u(i-1,j),u(i,j),u(i-2,j),sch)
+            else
+                temp1(i,j,1) = inter(xu(i),xu(i-1),xu(i+1),xc(i),u(i,j),u(i-1,j),u(i+1,j),sch)
+            endif
+        
+            ! south face
+            if(v(i,j-1)+v(i+1,j-1) .gt. 0d0) then 
+                temp1(i,j,2) = inter(yu(j-1),yu(j),yu(j-2),yv(j-1),u(i,j-1),u(i,j),u(i,j-2),sch)
+            else
+                temp1(i,j,2) = inter(yu(j),yu(j-1),yu(j+1),yv(j-1),u(i,j),u(i,j-1),u(i,j+1),sch)
+            endif
+
+        enddo
+    enddo
+
+elseif(dir == 'y') then
+    
+    do i = ivs,ive
+        do j = jvs,jve
+            
+            ! west face
+            if(u(i-1,j)+u(i-1,j+1) .gt. 0d0) then
+                temp1(i,j,1) = inter(xv(i-1),xv(i),xv(i-2),xu(i-1),v(i-1,j),v(i,j),v(i-2,j),sch)
+            else
+                temp1(i,j,1) = inter(xv(i),xv(i-1),xv(i+1),xu(i-1),v(i,j),v(i-1,j),v(i+1,j),sch)
+            endif
+
+            ! south face
+            if(v(i,j)+v(i,j-1) .gt. 0d0) then
+                temp1(i,j,2) = inter(yv(j-1),yv(j),yv(j-2),yc(j),v(i,j-1),v(i,j),v(i,j-2),sch)
+            else
+                temp1(i,j,2) = inter(yv(j),yv(j-1),yv(j+1),yc(j),v(i,j),v(i,j-1),v(i,j+1),sch)
+            endif
+        enddo
+    enddo
+
+endif
+
+contains
+
+!-------------------------------------------------------------------------------
+real(8) function inter(x0,x1,x2,x,y0,y1,y2,scheme)
+        
+        character(len=6), intent(in) :: scheme 
+        real(8), intent(in) ::  x0,x1,x2,x,y0,y1,y2
+        real(8) :: k,xi,a,b
+
+        ! First Order Upwind
+        if(trim(scheme) == 'FOU') then
+
+                 inter = y0
+
+        ! Second Order Upwind
+        elseif(trim(scheme) == 'SOU') then
+                
+                xi = (x-x0)/(x2-x0)
+                a = (y2-y0)/(x2-x0)
+                b = y0
+                inter = y0 + a*xi
+
+        ! Quadratic Upwind Interpolation for Convective Kinematics
+        elseif(trim(scheme) == 'QUICK') then
+                ! Interpolation at the cell face (x)
+                !     |       |   u>  |
+                !     x2      x0  x   x1
+
+            xi = (x-x0)/(x1-x0)
+            k = (x2-x0)/(x1-x0)
+            a = (y2-k**2*y1+(k**2-1.0)*y0)/k/(1.0-k)
+            b = (y2-k   *y1+(k   -1.0)*y0)/k/(k-1.0)
+            inter = y0+a*xi+b*xi**2
+
+        ! central difference     
+        elseif(trim(scheme) == 'CD') then
+            
+            inter = 0.5d0*(y0+y1)
+        
+        ! Second Order ENO
+        elseif(trim(scheme) == 'S-ENO') then
+            
+            inter = y0 + min(abs(y1-y0),abs(y0-y2))
+
+        endif
+
+
+end function inter
+!------------------------------------------------------------------------------
+end subroutine interpolate
+
+
 
 end module flow
 
@@ -96,6 +321,7 @@ character(len = 20) :: bdry_cond(2)
 
 real(8) :: wall_vel(2,4) 
 
+contains
 !---------------------------------------------------------------------------
 ! subroutine for setting velocity BCs
 ! set_u_BC sets x-velocity BC
@@ -109,7 +335,7 @@ implicit none
 
 
 
-end subroutine Set_U_BC
+end subroutine set_u_BC
 
 subroutine set_v_BC
 implicit none
@@ -155,30 +381,17 @@ implicit none
 ! initialize time variables
 t_step = 0
 time = 0d0
-dx = Lx/(Nx); dy = Ly/(Ny) !; dz = Lz/(Nz)
 
 ! allocate unallocated variables
 allocate( u(Nx+Ng,Ny+2*Ng),   v(Nx+2*Ng,Ny+Ng),    &  !w(),&
           u_s(Nx+Ng,Ny+2*Ng), v_s(Nx+2*Ng,Ny+Ng),  &  !w(),&
-          p(Nx+2*Ng,Ny+2*Ng), rho(Nx+2*Ng,Ny+2*Ng) )
-          c(Nx+2,Ny+2),
+          pc(Nx+2*Ng,Ny+2*Ng), rhoc(Nx+2*Ng,Ny+2*Ng) )
 
-allocate( x(Nx+1),     y(Nx+1),     &
+allocate( xc(Nx+1),    yc(Nx+1),     &
           xu(Nx+Ng),   yu(Nx+2*Ng), &
-          xv(Nx+2*Ng), yv(Nx+Ng),   &
-          xp(Nx+2*Ng), yp(Nx+2*Ng)  )
+          xv(Nx+2*Ng), yv(Nx+Ng))
 
-u = 0d0; v = 0d0; p = 0d0; rho = rhof
-c = 0.25d0
-c(2,3:Ny) = 1d0/3d0
-c(Nx+1,3:Ny) = 1d0/3d0
-c(3:Nx,2) = 1d0/3d0
-c(3:Nx,Ny+1) = 1d0/3d0
-c(2,2) = 0.5d0
-c(2,Ny+1) = 0.5d0
-c(Nx+1,2) = 0.5d0
-c(Nx+1,Ny+1) = 0.5d0
-
+u = 0d0; v = 0d0; pc = 0d0; rhoc = rhof
 
 end subroutine initialize
 
@@ -207,3 +420,15 @@ end subroutine read_input
 
 
 end module io
+
+!---------------------------------------------------------------------------
+! module concerning advection terms
+! Author: Rishabh More
+! Date: 07-08-2018
+!---------------------------------------------------------------------------
+
+
+!module advection
+
+
+
